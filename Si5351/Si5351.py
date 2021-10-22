@@ -317,9 +317,9 @@ def test():
     #     settings1 = synt.get_parameters(f_out)
     #     synt.setup(SI5351_PLL_A, 0, settings1)
     #     time.sleep(0.1)
-    settings1 = synt.get_parameters(1000e6)
+    settings1 = synt.get_parameters(100e6)
     settings2 = copy(settings1)
-    settings2.d = 120
+    settings2.d = settings2.d*2
     print(settings1)
     print(settings2)
     # synt.setup(SI5351_PLL_A, 0, settings1)
