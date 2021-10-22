@@ -10,13 +10,13 @@ Python library for Si5351
 
 ## Usage
 ```Python
-from copy import copy
+from Si5351 import Si5351
+from copy import copy # only for setting output1
 synt = Si5351()
-settings1 = synt.get_parameters(10e6)
-synt.setup(SI5351_PLL_A, 0, settings1)
-settings2 = copy(settings1)
-settings2.d = 120
-synt.setup(SI5351_PLL_A, 0, settings1)
-synt.setup(SI5351_PLL_A, 1, settings2)
+settings1 = synt.get_parameters(10e6) # calculate setting parameters
+settings2 = copy(settings1) # copy of settings
+settings2.d = 120     # change of output divider
+synt.setup(SI5351_PLL_A, 0, settings1) # set output 0
+synt.setup(SI5351_PLL_A, 1, settings2) # set output 1
 ```
 Output 0 is 10 MHz, Output 1 is 5 MHz
