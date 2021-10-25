@@ -1,3 +1,9 @@
+__author__ = 'Jan Spacil'
+__email__ = 'zeren.yuufana(at)gmail.com'
+__date__ = "2021.10.09"
+__version__ = '1.1'
+__docformat__ = "reStructuredText"
+
 import logging
 from fractions import Fraction
 from sys import platform
