@@ -1,18 +1,18 @@
-__author__ = 'Jan Spacil'
-__email__ = 'zeren.yuufana(at)gmail.com'
+__author__ = "Jan Spacil"
+__email__ = "zeren.yuufana(at)gmail.com"
 __date__ = "2021.10.09"
-__version__ = '1.1'
+__version__ = "1.1"
 __docformat__ = "reStructuredText"
 
 import logging
 from fractions import Fraction
 from sys import platform
+from types import SimpleNamespace
 
 import numpy as np
 
-if platform == 'linux':
+if platform == "linux":
     from smbus2 import SMBus
-from types import SimpleNamespace
 
 SI5351_REGISTER_0_DEVICE_STATUS = 0
 SI5351_REGISTER_1_INTERRUPT_STATUS_STICKY = 1
@@ -108,9 +108,9 @@ SI5351_REGISTER_183_CRYSTAL_INTERNAL_LOAD_CAPACITANCE = 183
 
 SI5351_I2C_ADDRESS_DEFAULT = 0x60
 
-SI5351_CRYSTAL_LOAD_6PF = (1 << 6)
-SI5351_CRYSTAL_LOAD_8PF = (2 << 6)
-SI5351_CRYSTAL_LOAD_10PF = (3 << 6)
+SI5351_CRYSTAL_LOAD_6PF = 1 << 6
+SI5351_CRYSTAL_LOAD_8PF = 2 << 6
+SI5351_CRYSTAL_LOAD_10PF = 3 << 6
 
 SI5351_CRYSTAL_FREQ_25MHZ = 25000000
 SI5351_CRYSTAL_FREQ_27MHZ = 27000000
@@ -126,18 +126,18 @@ class Si5351:
     accuracy = 0.1  # Hz
 
     def __init__(self, address=SI5351_I2C_ADDRESS_DEFAULT, i2c_bus_num=1):
-        self.crystalFreq = SI5351_CRYSTAL_FREQ_25MHZ
-        self.crystalLoad = SI5351_CRYSTAL_LOAD_10PF
-        self.crystalPPM = 30
+        self.crystal_freq = SI5351_CRYSTAL_FREQ_25MHZ
+        self.crystal_load = SI5351_CRYSTAL_LOAD_10PF
+        self.crystal_ppm = 30
 
         self.plla_freq = 0
         self.pllb_freq = 0
 
-        self.i2cAddress = address
-        self.i2cBus = SMBus(i2c_bus_num)
+        self.i2c_address = address
+        self.i2c_bus = SMBus(i2c_bus_num)
 
     def __del__(self):
-        self.i2cBus.close()
+        self.i2c_bus.close()
 
     @staticmethod
     def set_bit(v, index, x):
@@ -161,22 +161,41 @@ class Si5351:
             pll_base_address = SI5351_REGISTER_26_MULTISYNTH_NA_PARAMETERS_1
         else:
             pll_base_address = SI5351_REGISTER_26_MULTISYNTH_NA_PARAMETERS_1 + 8
-        self.i2cBus.write_byte_data(self.i2cAddress, pll_base_address + 0, (p3 & 0x0000FF00) >> 8)
-        self.i2cBus.write_byte_data(self.i2cAddress, pll_base_address + 1, (p3 & 0x000000FF))
-        self.i2cBus.write_byte_data(self.i2cAddress, pll_base_address + 2, (p1 & 0x00030000) >> 16)
-        self.i2cBus.write_byte_data(self.i2cAddress, pll_base_address + 3, (p1 & 0x0000FF00) >> 8)
-        self.i2cBus.write_byte_data(self.i2cAddress, pll_base_address + 4, (p1 & 0x000000FF))
-        self.i2cBus.write_byte_data(self.i2cAddress, pll_base_address + 5,
-                                    ((p3 & 0x000F0000) >> 12) | ((p2 & 0x000F0000) >> 16))
-        self.i2cBus.write_byte_data(self.i2cAddress, pll_base_address + 6, (p2 & 0x0000FF00) >> 8)
-        self.i2cBus.write_byte_data(self.i2cAddress, pll_base_address + 7, (p2 & 0x000000FF))
+        self.i2c_bus.write_byte_data(
+            self.i2c_address, pll_base_address + 0, (p3 & 0x0000FF00) >> 8
+        )
+        self.i2c_bus.write_byte_data(
+            self.i2c_address, pll_base_address + 1, (p3 & 0x000000FF)
+        )
+        self.i2c_bus.write_byte_data(
+            self.i2c_address, pll_base_address + 2, (p1 & 0x00030000) >> 16
+        )
+        self.i2c_bus.write_byte_data(
+            self.i2c_address, pll_base_address + 3, (p1 & 0x0000FF00) >> 8
+        )
+        self.i2c_bus.write_byte_data(
+            self.i2c_address, pll_base_address + 4, (p1 & 0x000000FF)
+        )
+        self.i2c_bus.write_byte_data(
+            self.i2c_address,
+            pll_base_address + 5,
+            ((p3 & 0x000F0000) >> 12) | ((p2 & 0x000F0000) >> 16),
+        )
+        self.i2c_bus.write_byte_data(
+            self.i2c_address, pll_base_address + 6, (p2 & 0x0000FF00) >> 8
+        )
+        self.i2c_bus.write_byte_data(
+            self.i2c_address, pll_base_address + 7, (p2 & 0x000000FF)
+        )
 
         # Reset both PLLs
-        self.i2cBus.write_byte_data(self.i2cAddress, SI5351_REGISTER_177_PLL_RESET, (1 << 7) | (1 << 5))
+        self.i2c_bus.write_byte_data(
+            self.i2c_address, SI5351_REGISTER_177_PLL_RESET, (1 << 7) | (1 << 5)
+        )
         if pll == SI5351_PLL_A:
-            self.plla_freq = self.crystalFreq * (a + b / c)
+            self.plla_freq = self.crystal_freq * (a + b / c)
         else:
-            self.pllb_freq = self.crystalFreq * (a + b / c)
+            self.pllb_freq = self.crystal_freq * (a + b / c)
 
     def setup_multisynth(self, output, pll, d, e=0, f=1, r=1):
         # Output Multisynth Divider Equations (150 MHz < Fout <= 200 MHz)
@@ -192,148 +211,188 @@ class Si5351:
             ms0_divby4 = 0
         else:
             r = 0
-        multisynth_base_address = 0
-        if output == 0:
-            multisynth_base_address = SI5351_REGISTER_42_MULTISYNTH0_PARAMETERS_1
-        if output == 1:
-            multisynth_base_address = SI5351_REGISTER_50_MULTISYNTH1_PARAMETERS_1
-        if output == 2:
-            multisynth_base_address = SI5351_REGISTER_58_MULTISYNTH2_PARAMETERS_1
-        if output == 3:
-            multisynth_base_address = SI5351_REGISTER_66_MULTISYNTH3_PARAMETERS_1
-        if output == 4:
-            multisynth_base_address = SI5351_REGISTER_74_MULTISYNTH4_PARAMETERS_1
-        if output == 5:
-            multisynth_base_address = SI5351_REGISTER_82_MULTISYNTH5_PARAMETERS_1
+        multisynth_base_addresses = {
+            0: SI5351_REGISTER_42_MULTISYNTH0_PARAMETERS_1,
+            1: SI5351_REGISTER_50_MULTISYNTH1_PARAMETERS_1,
+            2: SI5351_REGISTER_58_MULTISYNTH2_PARAMETERS_1,
+            3: SI5351_REGISTER_66_MULTISYNTH3_PARAMETERS_1,
+            4: SI5351_REGISTER_74_MULTISYNTH4_PARAMETERS_1,
+            5: SI5351_REGISTER_82_MULTISYNTH5_PARAMETERS_1,
+        }
+        multisynth_base_address = multisynth_base_addresses.get(output, 0)
 
-        self.i2cBus.write_byte_data(self.i2cAddress, multisynth_base_address + 0, (p3 & 0x0000FF00) >> 8)
-        self.i2cBus.write_byte_data(self.i2cAddress, multisynth_base_address + 1, (p3 & 0x000000FF))
-        self.i2cBus.write_byte_data(self.i2cAddress, multisynth_base_address + 2,
-                                    ((ms0_divby4 & 0x00000003) << 2) + ((r & 0x00000007) << 4) + (
-                                            (p1 & 0x00030000) >> 16))
-        self.i2cBus.write_byte_data(self.i2cAddress, multisynth_base_address + 3, (p1 & 0x0000FF00) >> 8)
-        self.i2cBus.write_byte_data(self.i2cAddress, multisynth_base_address + 4, (p1 & 0x000000FF))
-        self.i2cBus.write_byte_data(self.i2cAddress, multisynth_base_address + 5,
-                                    ((p3 & 0x000F0000) >> 12) | ((p2 & 0x000F0000) >> 16))
-        self.i2cBus.write_byte_data(self.i2cAddress, multisynth_base_address + 6, (p2 & 0x0000FF00) >> 8)
-        self.i2cBus.write_byte_data(self.i2cAddress, multisynth_base_address + 7, (p2 & 0x000000FF))
+        self.i2c_bus.write_byte_data(
+            self.i2c_address, multisynth_base_address + 0, (p3 & 0x0000FF00) >> 8
+        )
+        self.i2c_bus.write_byte_data(
+            self.i2c_address, multisynth_base_address + 1, (p3 & 0x000000FF)
+        )
+        self.i2c_bus.write_byte_data(
+            self.i2c_address,
+            multisynth_base_address + 2,
+            ((ms0_divby4 & 0x00000003) << 2)
+            + ((r & 0x00000007) << 4)
+            + ((p1 & 0x00030000) >> 16),
+        )
+        self.i2c_bus.write_byte_data(
+            self.i2c_address, multisynth_base_address + 3, (p1 & 0x0000FF00) >> 8
+        )
+        self.i2c_bus.write_byte_data(
+            self.i2c_address, multisynth_base_address + 4, (p1 & 0x000000FF)
+        )
+        self.i2c_bus.write_byte_data(
+            self.i2c_address,
+            multisynth_base_address + 5,
+            ((p3 & 0x000F0000) >> 12) | ((p2 & 0x000F0000) >> 16),
+        )
+        self.i2c_bus.write_byte_data(
+            self.i2c_address, multisynth_base_address + 6, (p2 & 0x0000FF00) >> 8
+        )
+        self.i2c_bus.write_byte_data(
+            self.i2c_address, multisynth_base_address + 7, (p2 & 0x000000FF)
+        )
 
         clk_control_reg = 0x0F  # 8mA drive strength, MS0 as CLK0 source, Clock not inverted, powered up
         if pll == SI5351_PLL_B:  # Uses PLLB
-            clk_control_reg |= (1 << 5)
+            clk_control_reg |= 1 << 5
         if e == 0:  # Integer mode
-            clk_control_reg |= (1 << 6)
-        if output == 0:
-            self.i2cBus.write_byte_data(self.i2cAddress, SI5351_REGISTER_16_CLK0_CONTROL, clk_control_reg)
-        if output == 1:
-            self.i2cBus.write_byte_data(self.i2cAddress, SI5351_REGISTER_17_CLK1_CONTROL, clk_control_reg)
-        if output == 2:
-            self.i2cBus.write_byte_data(self.i2cAddress, SI5351_REGISTER_18_CLK2_CONTROL, clk_control_reg)
-        if output == 3:
-            self.i2cBus.write_byte_data(self.i2cAddress, SI5351_REGISTER_19_CLK3_CONTROL, clk_control_reg)
-        if output == 4:
-            self.i2cBus.write_byte_data(self.i2cAddress, SI5351_REGISTER_20_CLK4_CONTROL, clk_control_reg)
-        if output == 5:
-            self.i2cBus.write_byte_data(self.i2cAddress, SI5351_REGISTER_21_CLK5_CONTROL, clk_control_reg)
-        if output == 6:
-            self.i2cBus.write_byte_data(self.i2cAddress, SI5351_REGISTER_22_CLK6_CONTROL, clk_control_reg)
-        if output == 7:
-            self.i2cBus.write_byte_data(self.i2cAddress, SI5351_REGISTER_23_CLK7_CONTROL, clk_control_reg)
+            clk_control_reg |= 1 << 6
+
+        clk_control_registers = {
+            0: SI5351_REGISTER_16_CLK0_CONTROL,
+            1: SI5351_REGISTER_17_CLK1_CONTROL,
+            2: SI5351_REGISTER_18_CLK2_CONTROL,
+            3: SI5351_REGISTER_19_CLK3_CONTROL,
+            4: SI5351_REGISTER_20_CLK4_CONTROL,
+            5: SI5351_REGISTER_21_CLK5_CONTROL,
+            6: SI5351_REGISTER_22_CLK6_CONTROL,
+            7: SI5351_REGISTER_23_CLK7_CONTROL,
+        }
+
+        if output in clk_control_registers:
+            self.i2c_bus.write_byte_data(
+                self.i2c_address, clk_control_registers[output], clk_control_reg
+            )
 
     def enable_outputs(self, output, enable=True):
-        actual = self.i2cBus.read_byte_data(self.i2cAddress, SI5351_REGISTER_3_OUTPUT_ENABLE_CONTROL)
+        actual = self.i2c_bus.read_byte_data(
+            self.i2c_address, SI5351_REGISTER_3_OUTPUT_ENABLE_CONTROL
+        )
         to_set = self.set_bit(actual, output, not enable)
-        self.i2cBus.write_byte_data(self.i2cAddress, SI5351_REGISTER_3_OUTPUT_ENABLE_CONTROL, to_set)
+        self.i2c_bus.write_byte_data(
+            self.i2c_address, SI5351_REGISTER_3_OUTPUT_ENABLE_CONTROL, to_set
+        )
 
     def get_parameters(self, f_out):
         a, b, c, d = 0, 0, 0, 0
-        logging.info('Finding Si6361 setting for frequency {0} MHz'.format(f_out / 1e6))
+        logging.info("Finding Si6361 setting for frequency %s MHz", f_out / 1e6)
         if f_out < 8192:
-            logging.warning('Input frequency is out of range')
-            raise ValueError('Input frequency is out of range')
+            logging.warning("Input frequency is out of range")
+            raise ValueError("Input frequency is out of range")
         if f_out <= 1e6:
             r = 2 ** np.ceil(np.log2(500e3) - np.log2(f_out) + 1)
         else:
             r = 1
         if f_out > 200e6:
-            logging.warning('Input frequency is out of range')
-            raise ValueError('Input frequency is out of range')
+            logging.warning("Input frequency is out of range")
+            raise ValueError("Input frequency is out of range")
         # First try find integer settings
-        x = np.array([f_out, self.crystalFreq])
+        x = np.array([f_out, self.crystal_freq])
         x = x / x.min() * x.max()
         x = Fraction(int(x[0]), int(x[1]))
         x = np.array([x.numerator, x.denominator])
         x = x.astype(np.double)
         run = 1
         final_multiplier = x
-        while (self.crystalFreq * final_multiplier[0]) < 600e6:
+        while (self.crystal_freq * final_multiplier[0]) < 600e6:
             final_multiplier = x * run
             run += 1
-            if self.crystalFreq * final_multiplier[0] > 900e6:
+            if self.crystal_freq * final_multiplier[0] > 900e6:
                 break
-        f_vco = self.crystalFreq * final_multiplier[0]
+        f_vco = self.crystal_freq * final_multiplier[0]
         final_multiplier /= np.array([1, r])
         if 600e6 <= f_vco or f_vco <= 900e6:
             if 15 <= final_multiplier[0] <= 90:
-                if (final_multiplier[1] == 4 or final_multiplier[1] == 6 or final_multiplier[1] >= 8) and \
-                        final_multiplier[1] < 900:
-                    logging.info('Integer mode')
+                if (
+                    final_multiplier[1] == 4
+                    or final_multiplier[1] == 6
+                    or final_multiplier[1] >= 8
+                ) and final_multiplier[1] < 900:
+                    logging.info("Integer mode")
                     logging.info(
-                        'a = {}, b = {}, c = {}, d = {}, e =  {}, f = {}, r = {}'.format(final_multiplier[0], 0, 1,
-                                                                                         final_multiplier[1], 0, 1,
-                                                                                         r))
-                    logging.info('VCO frequency is {} MHz'.format(f_vco / 1e6))
-                    return SimpleNamespace(a=final_multiplier[0], b=0, c=1, d=final_multiplier[1], e=0, f=1, R=r)
+                        "a = %s, b = %s, c = %s, d = %s, e =  %s, f = %s, r = %s",
+                        final_multiplier[0], 0, 1, final_multiplier[1], 0, 1, r
+                    )
+                    logging.info("VCO frequency is %s MHz", f_vco / 1e6)
+                    return SimpleNamespace(
+                        a=final_multiplier[0],
+                        b=0,
+                        c=1,
+                        d=final_multiplier[1],
+                        e=0,
+                        f=1,
+                        R=r,
+                    )
 
         # If could not find integer setting then use fractional
         e = 0
         f = 1
         if f_out <= 112.5e6:
-            for f_vco in np.linspace(SI5351_VCO_MIN_FREQ, SI5351_VCO_MAX_FREQ, int(1e3)):
+            for f_vco in np.linspace(
+                SI5351_VCO_MIN_FREQ, SI5351_VCO_MAX_FREQ, int(1e3)
+            ):
                 omd = f_vco / (f_out * r)
                 d = np.floor(omd)
                 if d > 2048:
                     continue
                 if d < 8:
                     continue
-                fmd = r * (d + e / f) * f_out / self.crystalFreq
+                fmd = r * (d + e / f) * f_out / self.crystal_freq
                 a = np.floor(fmd)
                 c = 1048575
                 b = np.round((fmd % 1) * c)
-                if np.abs(f_out - self.crystalFreq * (a + b / c) / (
-                        r * (d + e / f))) <= self.accuracy:  # Accuracy condition is met
-                    if self.crystalFreq * (a + b / c) >= SI5351_VCO_MIN_FREQ:
+                if (
+                    np.abs(f_out - self.crystal_freq * (a + b / c) / (r * (d + e / f)))
+                    <= self.accuracy
+                ):  # Accuracy condition is met
+                    if self.crystal_freq * (a + b / c) >= SI5351_VCO_MIN_FREQ:
                         break
         else:  # pro d=4 a d = 6
             if f_out >= 150e6:
                 d = 4
             else:  # 112.5 MHz < f_out <150 MHz
                 d = 6
-            fmd = r * (d + e / f) * f_out / self.crystalFreq
+            fmd = r * (d + e / f) * f_out / self.crystal_freq
             a = np.floor(fmd)
             c = 1048575
             b = np.round((fmd % 1) * c)
-        logging.info('Fractional mode')
-        logging.info('VCO frequency is {} MHz'.format(self.crystalFreq * (a + b / c) / 1e6))
-        logging.info('a = {}, b = {}, c = {}, d = {}, e =  {}, f = {}, r = {}'.format(a, b, c, d, e, f, r))
-        logging.info('Error of frequency {}'.format(f_out - self.crystalFreq * (a + b / c) / (r * (d + e / f))))
+        logging.info("Fractional mode")
+        vco_freq = self.crystal_freq * (a + b / c) / 1e6
+        logging.info("VCO frequency is %s MHz", vco_freq)
+        logging.info(
+            "a = %s, b = %s, c = %s, d = %s, e =  %s, f = %s, r = %s",
+            a, b, c, d, e, f, r
+        )
+        freq_err = f_out - self.crystal_freq * (a + b / c) / (r * (d + e / f))
+        logging.info("Error of frequency %s", freq_err)
         if a < 15 or a > 90:
-            logging.error('Value of PLL divider is out of range')
-            raise Exception('Value of PLL divider is out of range')
-        if b < 0 or b > 2 ** 20 - 1:
-            logging.error('Value of PLL fractional numerator is out of range')
-            raise Exception('Value of PLL fractional numerator is out of range')
+            logging.error("Value of PLL divider is out of range")
+            raise ValueError("Value of PLL divider is out of range")
+        if b < 0 or b > 2**20 - 1:
+            logging.error("Value of PLL fractional numerator is out of range")
+            raise ValueError("Value of PLL fractional numerator is out of range")
         if d == 5 or d == 7 or d < 4 or d > 900:
-            logging.error('Value of multisynth divider is out of range')
-            raise Exception('Value of multisynth divider is out of range')
-        if e < 0 or e > 2 ** 20 - 1:
-            logging.error('Value of multisynth fractional numerator is out of range')
-            raise Exception('Value of multisynth fractional numerator is out of range')
+            logging.error("Value of multisynth divider is out of range")
+            raise ValueError("Value of multisynth divider is out of range")
+        if e < 0 or e > 2**20 - 1:
+            logging.error("Value of multisynth fractional numerator is out of range")
+            raise ValueError("Value of multisynth fractional numerator is out of range")
         return SimpleNamespace(a=a, b=b, c=c, d=d, e=e, f=f, R=r)
 
 
 def test():
     from copy import copy
+
     synt = Si5351()
     # for f_out in (np.random.rand(10000)*(200e6-10e3))+10e3:
     #     print('Set frequency {} MHz.'.format(f_out/1e6))
@@ -350,6 +409,8 @@ def test():
     # synt.enableOutputs(1, enable=False)
 
 
-if __name__ == '__main__':
-    logging.basicConfig(format='%(asctime)s %(message)s', filename='debug.log', level=logging.DEBUG)
+if __name__ == "__main__":
+    logging.basicConfig(
+        format="%(asctime)s %(message)s", filename="debug.log", level=logging.DEBUG
+    )
     test()
